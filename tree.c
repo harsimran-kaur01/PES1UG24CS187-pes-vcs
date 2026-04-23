@@ -70,6 +70,8 @@ int tree_serialize(const Tree *tree, void **data_out, size_t *len_out) {
     if (!buffer) return -1;
 
     Tree sorted_tree = *tree;
+
+    // 🔥 Explicit sorting (this commit’s purpose)
     qsort(sorted_tree.entries, sorted_tree.count, sizeof(TreeEntry), compare_tree_entries);
 
     size_t offset = 0;
