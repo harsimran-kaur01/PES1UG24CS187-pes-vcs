@@ -45,7 +45,6 @@ int tree_parse(const void *data, size_t len, Tree *tree_out) {
         if (!null_byte) return -1;
 
         size_t name_len = null_byte - ptr;
-        if (name_len >= sizeof(entry->name)) return -1;
         memcpy(entry->name, ptr, name_len);
         entry->name[name_len] = '\0';
 
@@ -70,8 +69,6 @@ int tree_serialize(const Tree *tree, void **data_out, size_t *len_out) {
     if (!buffer) return -1;
 
     Tree sorted_tree = *tree;
-
-    // 🔥 Explicit sorting (this commit’s purpose)
     qsort(sorted_tree.entries, sorted_tree.count, sizeof(TreeEntry), compare_tree_entries);
 
     size_t offset = 0;
@@ -91,6 +88,25 @@ int tree_serialize(const Tree *tree, void **data_out, size_t *len_out) {
 }
 
 int tree_from_index(ObjectID *id_out) {
-    (void)id_out;
-    return -1;
+    Index index;
+    if (index_load(&index) != 0) return -1;
+
+    Tree tree;
+    tree.count = 0;
+
+    for (int i = 0; i < index.count; i++) {
+        tree.entries[tree.count].mode = index.entries[i].mode;
+        tree.entries[tree.count].hash = index.entries[i].hash;
+        strcpy(tree.entries[tree.count].name, index.entries[i].path);
+        tree.count++;
+    }
+
+    void *data;
+    size_t len;
+
+    if (tree_serialize(&tree, &data, &len) != 0) return -1;
+
+    int rc = object_write(OBJ_TREE, data, len, id_out);
+    free(data);
+    return rc;
 }
