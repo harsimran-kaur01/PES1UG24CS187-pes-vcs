@@ -97,13 +97,24 @@ int commit_create(const char *message, ObjectID *commit_id_out) {
     if (tree_from_index(&c.tree) != 0)
         return -1;
 
-    // NEW: parent
     if (head_read(&c.parent) == 0)
         c.has_parent = 1;
     else
         c.has_parent = 0;
 
-    (void)message;
+    // NEW fields
+    snprintf(c.author, sizeof(c.author), "%s", pes_author());
+    c.timestamp = (uint64_t)time(NULL);
+    snprintf(c.message, sizeof(c.message), "%s", message);
+
+    // Serialize
+    void *data;
+    size_t len;
+    if (commit_serialize(&c, &data, &len) != 0)
+        return -1;
+
+    free(data);
+
     (void)commit_id_out;
     return 0;
 }
