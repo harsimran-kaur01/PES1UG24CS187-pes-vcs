@@ -111,12 +111,16 @@ int commit_create(const char *message, ObjectID *commit_id_out) {
     if (commit_serialize(&c, &data, &len) != 0)
         return -1;
 
-    // NEW: write object
     if (object_write(OBJ_COMMIT, data, len, commit_id_out) != 0) {
         free(data);
         return -1;
     }
 
     free(data);
+
+    // FINAL STEP
+    if (head_update(commit_id_out) != 0)
+        return -1;
+
     return 0;
 }
