@@ -35,23 +35,23 @@ int tree_parse(const void *data, size_t len, Tree *tree_out) {
 
         char mode_str[16] = {0};
         size_t mode_len = space - ptr;
-        if (mode_len >= sizeof(mode_str)) return -1; // ✅ added
+        if (mode_len >= sizeof(mode_str)) return -1;
         memcpy(mode_str, ptr, mode_len);
         entry->mode = strtol(mode_str, NULL, 8);
 
         ptr = space + 1;
 
         const uint8_t *null_byte = memchr(ptr, '\0', end - ptr);
-        if (!null_byte) return -1; // ✅ added
+        if (!null_byte) return -1;
 
         size_t name_len = null_byte - ptr;
-        if (name_len >= sizeof(entry->name)) return -1; // ✅ added
+        if (name_len >= sizeof(entry->name)) return -1;
         memcpy(entry->name, ptr, name_len);
         entry->name[name_len] = '\0';
 
         ptr = null_byte + 1;
 
-        if (ptr + HASH_SIZE > end) return -1; // ✅ added
+        if (ptr + HASH_SIZE > end) return -1;
         memcpy(entry->hash.hash, ptr, HASH_SIZE);
         ptr += HASH_SIZE;
 
