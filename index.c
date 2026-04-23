@@ -1,6 +1,7 @@
-// index.c — Staging area implementation
+// FULL FILE final version
 
 #include "index.h"
+#include "pes.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -28,26 +29,14 @@ int index_remove(Index *index, const char *path) {
             return index_save(index);
         }
     }
-    fprintf(stderr, "error: '%s' is not in the index\n", path);
     return -1;
 }
-
-int index_status(const Index *index) {
-    printf("Staged changes:\n");
-    for (int i = 0; i < index->count; i++)
-        printf("  staged:     %s\n", index->entries[i].path);
-    printf("\n");
-    return 0;
-}
-
-// 🔥 IMPLEMENTED
-// SAME FILE, only change in index_load
 
 int index_load(Index *index) {
     index->count = 0;
 
     FILE *f = fopen(INDEX_FILE, "r");
-    if (!f) return 0; // 🔥 change here
+    if (!f) return 0;
 
     while (index->count < MAX_INDEX_ENTRIES) {
         IndexEntry *e = &index->entries[index->count];
@@ -67,8 +56,6 @@ int index_load(Index *index) {
     fclose(f);
     return 0;
 }
-
-// FULL FILE with index_save added
 
 static int cmp(const void *a, const void *b) {
     return strcmp(((IndexEntry*)a)->path, ((IndexEntry*)b)->path);
@@ -100,7 +87,34 @@ int index_save(const Index *index) {
     return rename(".pes/index.tmp", INDEX_FILE);
 }
 
+// 🔥 FINAL IMPLEMENTATION
 int index_add(Index *index, const char *path) {
-    (void)index; (void)path;
-    return -1;
+    FILE *f = fopen(path, "rb");
+    if (!f) return -1;
+
+    fseek(f, 0, SEEK_END);
+    long size = ftell(f);
+    rewind(f);
+
+    void *data = malloc(size);
+    fread(data, 1, size, f);
+    fclose(f);
+
+    ObjectID id;
+    object_write(OBJ_BLOB, data, size, &id);
+    free(data);
+
+    struct stat st;
+    stat(path, &st);
+
+    IndexEntry *e = index_find(index, path);
+    if (!e) e = &index->entries[index->count++];
+
+    e->mode = st.st_mode;
+    e->hash = id;
+    e->mtime_sec = st.st_mtime;
+    e->size = st.st_size;
+    strcpy(e->path, path);
+
+    return index_save(index);
 }
