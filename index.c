@@ -68,9 +68,36 @@ int index_load(Index *index) {
     return 0;
 }
 
+// FULL FILE with index_save added
+
+static int cmp(const void *a, const void *b) {
+    return strcmp(((IndexEntry*)a)->path, ((IndexEntry*)b)->path);
+}
+
 int index_save(const Index *index) {
-    (void)index;
-    return -1;
+    Index copy = *index;
+    qsort(copy.entries, copy.count, sizeof(IndexEntry), cmp);
+
+    FILE *f = fopen(".pes/index.tmp", "w");
+    if (!f) return -1;
+
+    for (int i = 0; i < copy.count; i++) {
+        char hex[HASH_HEX_SIZE + 1];
+        hash_to_hex(&copy.entries[i].hash, hex);
+
+        fprintf(f, "%o %s %lu %u %s\n",
+                copy.entries[i].mode,
+                hex,
+                copy.entries[i].mtime_sec,
+                copy.entries[i].size,
+                copy.entries[i].path);
+    }
+
+    fflush(f);
+    fsync(fileno(f));
+    fclose(f);
+
+    return rename(".pes/index.tmp", INDEX_FILE);
 }
 
 int index_add(Index *index, const char *path) {
