@@ -41,11 +41,13 @@ int index_status(const Index *index) {
 }
 
 // 🔥 IMPLEMENTED
+// SAME FILE, only change in index_load
+
 int index_load(Index *index) {
     index->count = 0;
 
     FILE *f = fopen(INDEX_FILE, "r");
-    if (!f) return -1;
+    if (!f) return 0; // 🔥 change here
 
     while (index->count < MAX_INDEX_ENTRIES) {
         IndexEntry *e = &index->entries[index->count];
