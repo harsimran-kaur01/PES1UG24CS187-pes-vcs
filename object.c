@@ -73,6 +73,30 @@ int object_write(ObjectType type, const void *data, size_t len, ObjectID *id_out
         return 0;
     }
 
+    char path[512];
+    object_path(id_out, path, sizeof(path));
+
+    char dir[512];
+    snprintf(dir, sizeof(dir), "%s/%.2s", OBJECTS_DIR, path + strlen(OBJECTS_DIR) + 1);
+    mkdir(dir, 0755);
+
+    char tmp[520];
+    snprintf(tmp, sizeof(tmp), "%s.tmp", path);
+
+    int fd = open(tmp, O_CREAT | O_WRONLY | O_TRUNC, 0644);
+    if (fd < 0) { free(buffer); return -1; }
+
+    if (write(fd, buffer, total_len) != (ssize_t)total_len) {
+        close(fd);
+        free(buffer);
+        return -1;
+    }
+
+    fsync(fd);
+    close(fd);
+
+    rename(tmp, path);
+
     free(buffer);
     return 0;
 }
